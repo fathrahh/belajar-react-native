@@ -10,22 +10,81 @@
 
 import React from 'react';
 import {
-  Button,
   Pressable,
   SafeAreaView,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
-import Gap from './components/Gap';
-import TodoCard from './components/TodoCard';
+
+import { Gap, TodoCard } from './components';
+
+type todoListType = {
+  id: number | string,
+  todo: string
+}
+
+const getCurrentTime = () => {
+  return new Date().getTime()
+}
 
 const App = () => {
   const [inputTodo, setInputTodo] = React.useState("")
-  const [todoList, setTodoList] = React.useState("")
+  const [todoList, setTodoList] = React.useState<Array<todoListType>>([])
+  const [editId, setEditID] = React.useState<string | number>("")
+
+  const findItemByIndex = (todoId: string | number) => {
+    let number: number | undefined
+    todoList.forEach((item, idx) => {
+      if (item.id === todoId) {
+        number = idx
+      }
+    })
+    return number
+  }
+
+  const handleSubmit = () => {
+    if (editId) {
+      const copyList = [...todoList]
+      let index = findItemByIndex(editId)
+      if (index === undefined) {
+        setEditID('')
+        setInputTodo("")
+        return
+      }
+      copyList[index].todo = inputTodo
+      setTodoList(copyList)
+      setInputTodo("")
+      setEditID("")
+      return
+    }
+    if (inputTodo === "") return
+    const currentInput = {
+      id: getCurrentTime(),
+      todo: inputTodo,
+    }
+    setTodoList([...todoList, currentInput])
+    setInputTodo("")
+  }
+
+  const filterDataById = (todoId: (string | number)) => {
+    return todoList.find(item => item.id === todoId)
+  }
+
+  const handleUpdate = (todoId: (string | number)) => {
+    const filtererData = filterDataById(todoId)
+    if (filtererData && filtererData.id) {
+      setEditID(filtererData.id)
+      setInputTodo(filtererData.todo)
+    }
+  }
+
+  const handleDeleted = (todoId: string | number) => {
+    const filtererData = todoList.filter(item => item.id !== todoId)
+    setTodoList(filtererData)
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -39,14 +98,20 @@ const App = () => {
             defaultValue={inputTodo}
           />
           <Gap width={5} />
-          <Pressable style={styles.buttonTodo} >
+          <Pressable style={styles.buttonTodo} onPress={handleSubmit} >
             <Text style={styles.buttonText}>Submit</Text>
           </Pressable>
         </View>
         <ScrollView style={styles.listSection}>
-          <TodoCard />
-          <Gap height={10} />
-          <TodoCard />
+          {todoList.map((item: todoListType, idx: number) => (
+            <View key={idx}>
+              <TodoCard
+                title={item.todo}
+                onUpdate={() => handleUpdate(item.id)}
+                onDelete={() => handleDeleted(item.id)} />
+              <Gap height={10} />
+            </View>
+          ))}
         </ScrollView>
       </View>
     </SafeAreaView>
